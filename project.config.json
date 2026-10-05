@@ -1,0 +1,46 @@
+{
+  "appid": "wx7f4c9d015e66bf92",
+  "projectname": "weiguang-islands-probe",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "miniprogram/",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "uploadWithSourceMap": false,
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./miniprogram/package.json",
+        "miniprogramNpmDistDir": "./miniprogram/"
+      }
+    ],
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "description": "按钮样机与摄像头诊断；尚非最终 Cocos 微信工程",
+  "libVersion": "3.17.3",
+  "srcMiniprogramRoot": "miniprogram/",
+  "packOptions": {
+    "ignore": [
+      {
+        "value": ".map",
+        "type": "suffix"
+      },
+      {
+        "value": "node_modules",
+        "type": "folder"
+      }
+    ],
+    "include": []
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

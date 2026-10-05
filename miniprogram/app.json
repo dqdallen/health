@@ -1,0 +1,15 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "微光群岛",
+    "navigationBarBackgroundColor": "#edf6f0",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#edf6f0"
+  },
+  "plugins": {
+    "tfjsPlugin": {
+      "version": "0.2.0",
+      "provider": "wx6afed118d9e81df9"
+    }
+  }
+}

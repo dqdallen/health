@@ -1,0 +1,12 @@
+node_modules/
+preview/lib/
+miniprogram/lib/
+project.private.config.json
+*.log
+artifacts/
+miniprogram/miniprogram_npm/
+miniprogram/recognition/config.js
+.npm-cache/
+.local-tools/
+models/*.tar.gz
+models/movenet-lightning-v4/

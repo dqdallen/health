@@ -1,0 +1,6 @@
+制作方式：内置图像生成；三项各自独立调用，transparent_background=true。
+参考：已确认的“微光群岛·首关界面设计”效果稿，仅作风格与身份参考。
+共同要求：mint teal painted metal, warm amber hearth light, delicate dark teal outlines, lightly hand painted 2D fantasy game art, subtle organic texture, readable silhouette, pale foliage greens. Not glossy 3D, not photoreal. No text, labels, interface, borders, watermark or cast ground plane. Single reusable game asset, not poster, UI screenshot or sprite sheet.
+守卫：完整头脚、双臂自然垂下、略朝右三分之四正面；青绿色圆润机械甲片、奶油色面罩、双深色眼睛、短琥珀天线、胸口炉心水晶和短腿。方形透明画布，四边约12%留边；无岛屿、灯灵、攻击、植物和拆散部件，发光局限体内。
+浮空岛：无角色、水平3:2画布、前方三分之四视角；苔绿平坦草面，中间留出站立区域，灰色层叠岩石悬空底部，花草位于左右边缘，少量藤蔓。全岛完整、约10%留边，中央草面约画布35%高度；无建筑、角色、天空、远景、影子和粒子。
+灯灵：单独完整的圆润琥珀灯笼伙伴，深青铜边框、友好双眼、小叶天线、侧面提柄、圆底；略朝左，方形透明画布约18%留边；内部柔光、无外部雾光、无机器人岛屿背景UI。

@@ -1,0 +1,20 @@
+{
+  "name": "weiguang-islands",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.wechat.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "preview": "node tools/serve.mjs",
+    "test:browser": "node tests/browser.mjs",
+    "configure:recognition": "node tools/configure-recognition.mjs"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

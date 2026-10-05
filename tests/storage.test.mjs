@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRun,reduce} from '../preview/lib/core.js';
+import {SnapshotStore,Coordinator} from '../preview/lib/storage.js';
+const fixture=()=>{const data=new Map();let fail=false;return {data,setFail(v){fail=v},get(k){return data.get(k)??null},set(k,v){if(fail)throw Error('disk full');data.set(k,v)}}};
+const start={type:'startRound',roundId:'r1',source:'button',exerciseProfileId:'pushup.wall'};
+const action=s=>({type:'action',eventId:'a1',roundId:s.currentRoundId,inputEpoch:s.inputEpoch,source:'button',exerciseProfileId:'pushup.wall'});
+test('double snapshot survives a damaged newest slot',()=>{const io=fixture(),store=new SnapshotStore(io);store.save(createRun('one'));store.save(reduce(createRun('one'),start));io.data.set('weiguang:B','broken');assert.equal(store.load().phase,'ready')});
+test('save and reload preserves actual progress and round data',()=>{const io=fixture(),store=new SnapshotStore(io);let s=reduce(createRun('one'),start);s=reduce(s,action(s));store.save(s);assert.deepEqual(new SnapshotStore(io).load(),s)});
+test('unknown future version blocks load and overwrite',()=>{const io=fixture();io.data.set('weiguang:A',JSON.stringify({formatVersion:99,seq:1}));const store=new SnapshotStore(io);assert.throws(()=>store.load(),/version/);assert.throws(()=>store.save(createRun('one')),/version/);assert.equal(JSON.parse(io.get('weiguang:A')).formatVersion,99)});
+test('failed write leaves visible state unchanged and blocks input until retry',()=>{const io=fixture(),c=new Coordinator(new SnapshotStore(io),createRun('one'));c.dispatch(start);io.setFail(true);assert.throws(()=>c.dispatch(action(c.state)),/disk full/);assert.equal(c.state.totalActions,0);assert.equal(c.blocked,true);assert.throws(()=>c.dispatch(action(c.state)),/blocked/);io.setFail(false);c.retry();assert.equal(c.state.totalActions,1);assert.equal(c.blocked,false)});
+test('reopening an active round pauses it and rejects earlier callbacks',()=>{const io=fixture(),store=new SnapshotStore(io);let s=reduce(createRun('one'),start);store.save(s);const c=new Coordinator(store,createRun('unused'));assert.equal(c.state.phase,'paused');assert.ok(c.state.inputEpoch>s.inputEpoch);c.dispatch({type:'resume'});assert.throws(()=>c.dispatch(action(s)),/epoch/)});
+test('both corrupt slots never silently reset or overwrite previous records',()=>{const io=fixture();io.data.set('weiguang:A','bad');io.data.set('weiguang:B','bad');const store=new SnapshotStore(io);assert.throws(()=>store.load(),/corrupt/);assert.throws(()=>store.save(createRun('one')),/corrupt/)});

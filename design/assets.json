@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "assets": [
+    {
+      "id": "guardian-v1",
+      "path": "preview/assets/guardian-v1.png",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBBox": [
+        0,
+        8,
+        464,
+        499
+      ],
+      "fileBytes": 260467,
+      "rgbaDecodeBytes": 1048576,
+      "sha256": "6a4b24913e10ac084c908698a8758625bf267554d9876bc7d339ac3a213a15ef",
+      "status": "sample; device QA pending",
+      "sourcePath": "design/source-assets/guardian-v1.png",
+      "export": "aspect-preserving resize; PNG, no crop or retouch"
+    },
+    {
+      "id": "island-v1",
+      "path": "preview/assets/island-v1.png",
+      "size": [
+        768,
+        512
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBBox": [
+        0,
+        4,
+        768,
+        512
+      ],
+      "fileBytes": 419181,
+      "rgbaDecodeBytes": 1572864,
+      "sha256": "bfe060544de19e7c1c046cd5725f817291da5e73d9f392133039d1594113ff80",
+      "status": "sample; device QA pending",
+      "sourcePath": "design/source-assets/island-v1.png",
+      "export": "aspect-preserving resize; PNG, no crop or retouch"
+    },
+    {
+      "id": "lantern-v1",
+      "path": "preview/assets/lantern-v1.png",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaRange": [
+        0,
+        255
+      ],
+      "visibleBBox": [
+        11,
+        6,
+        248,
+        249
+      ],
+      "fileBytes": 45659,
+      "rgbaDecodeBytes": 262144,
+      "sha256": "9015d23cc256f56b267ac06058c3d697b9609099331d6a7bbb2e06ecc3bc0224",
+      "status": "sample; device QA pending",
+      "sourcePath": "design/source-assets/lantern-v1.png",
+      "export": "aspect-preserving resize; PNG, no crop or retouch"
+    }
+  ]
+}

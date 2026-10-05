@@ -1,0 +1,15 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+let lib;try{lib=await import('../preview/lib/recognition.js')}catch{}
+const pose=(angle,score=1,side='left')=>{const a=angle*Math.PI/180;return [{name:side+'_shoulder',x:100,y:100,score},{name:side+'_elbow',x:100,y:200,score},{name:side+'_wrist',x:100+100*Math.sin(a),y:200-100*Math.cos(a),score},{name:side+'_hip',x:100,y:350,score}]};
+function counter(){assert.ok(lib,'recognition module must exist');return new lib.PushupCounter()}
+function hold(c,a,t,score=1,side='left'){let r;for(let i=0;i<3;i++)r=c.update(pose(a,score,side),t+i*100);return r}
+test('only stable up-down-up contributes one action; held poses do not repeat',()=>{const c=counter();assert.equal(hold(c,90,0).counted,false);hold(c,170,300);hold(c,90,600);assert.equal(hold(c,170,1000).counted,true);assert.equal(hold(c,170,1300).counted,false)});
+test('low confidence or camera loss cancels partial repetitions',()=>{const c=counter();hold(c,170,0);hold(c,90,300);hold(c,170,600,.2);assert.equal(hold(c,170,900).counted,false);hold(c,90,1200);assert.equal(hold(c,170,4000).counted,false)});
+test('switching visible arm cannot complete another arm repetition',()=>{const c=counter();hold(c,170,0);hold(c,90,300);assert.equal(hold(c,170,600,1,'right').counted,false)});
+test('brief twitch and duplicate timestamps cannot count',()=>{const c=counter();c.update(pose(170),0);c.update(pose(90),100);c.update(pose(170),200);assert.equal(c.update(pose(170),200).counted,false);assert.equal(hold(c,170,300).counted,false)});
+test('reset between pause and resume requires a fresh whole repetition',()=>{const c=counter();hold(c,170,0);hold(c,90,300);c.reset();assert.equal(hold(c,170,600).counted,false)});
+test('frame pump drops concurrent frames and ignores delayed inference after stop',async()=>{assert.ok(lib,'recognition module must exist');let resolve,calls=0,results=0;const p=new lib.FramePump({estimate:()=>{calls++;return new Promise(r=>resolve=r)}},()=>results++,()=>{});const first=p.push({},0);await p.push({},1);assert.equal(calls,1);p.stop();resolve(pose(170));await first;assert.equal(results,0)});
+test('inference rejection releases busy state and reports error',async()=>{assert.ok(lib,'recognition module must exist');let errors=0,calls=0;const p=new lib.FramePump({estimate:async()=>{calls++;throw Error('backend')}},()=>{},()=>errors++);await p.push({},0);await p.push({},100);assert.equal(errors,2);assert.equal(calls,2)});
+
+test('arm-only detections cannot count without torso visibility',()=>{const c=counter();for(const [a,t] of [[170,0],[90,300],[170,600]])for(let i=0;i<3;i++)assert.equal(c.update(pose(a).slice(0,3),t+i*100).counted,false)});
+test('MoveNet decoder reverses square padding and preserves confidence',()=>{assert.ok(lib?.decodeMoveNet,'decoder must exist');const raw=new Float32Array(51);raw[15]=.5;raw[16]=.25;raw[17]=.8;const p=lib.decodeMoveNet(raw,400,200)[5];assert.equal(p.name,'left_shoulder');assert.equal(p.x,100);assert.equal(p.y,100);assert.ok(Math.abs(p.score-.8)<1e-6);assert.throws(()=>lib.decodeMoveNet(new Float32Array(3),400,200));});

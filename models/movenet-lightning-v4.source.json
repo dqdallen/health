@@ -1,0 +1,14 @@
+{
+  "model": "MoveNet SinglePose Lightning",
+  "version": 4,
+  "framework": "TensorFlow.js GraphModel",
+  "publisher": "Google",
+  "sourcePage": "https://www.kaggle.com/models/google/movenet/tfJs/singlepose-lightning/4",
+  "downloadUrl": "https://www.kaggle.com/api/v1/models/google/movenet/tfJs/singlepose-lightning/4/download",
+  "downloadDate": "2026-10-05",
+  "archiveSha256": "28B9A96DDE847D2C5DD0D44DDD131D6DFD388B8A014A4535DC31B4059CE61765",
+  "archiveBytes": 4333929,
+  "weightBytes": 4650216,
+  "checks": ["Archive extracted", "JSON parsed", "All manifest weight files exist", "Weight byte count matches manifest"],
+  "runtimeValidated": false
+}
