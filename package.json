@@ -12,6 +12,7 @@
     "test": "npm run build && node --test tests/*.test.mjs",
     "preview": "node tools/serve.mjs",
     "test:browser": "node tests/browser.mjs",
+    "test:browser:standing": "node tests/standing-browser.mjs",
     "configure:recognition": "node tools/configure-recognition.mjs"
   },
   "devDependencies": {

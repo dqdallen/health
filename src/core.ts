@@ -1,10 +1,13 @@
 /** Pure game rules: no renderer, device, network or storage dependency. */
 export type Source = 'button' | 'camera';
-export type Profile = 'pushup.wall' | 'pushup.floor';
+export type Profile = 'pushup.wall' | 'pushup.floor' | 'kneeraise.standing' | 'legraise.side';
 export type Skill = 'focus' | 'split';
 export type Phase = 'ready' | 'active' | 'paused' | 'stageClear' | 'complete';
 export interface Level { id: string; version: number; stages: readonly (readonly number[])[] }
 export const firstLevel: Level = Object.freeze({id:'hearth-01',version:1,stages:Object.freeze([Object.freeze([40]),Object.freeze([30,30]),Object.freeze([80])])});
+export const kneeRaiseLevel:Level=Object.freeze({id:'knee-01',version:1,stages:Object.freeze([Object.freeze([60]),Object.freeze([40,40]),Object.freeze([80])])});
+export function getLevel(id:string):Level {const level=[firstLevel,kneeRaiseLevel].find(level=>level.id===id);requireThat(level,'version');return level;}
+export function stageProfiles(levelId:string,stage:number):Profile[]{return levelId===kneeRaiseLevel.id?[stage===1?'legraise.side':'kneeraise.standing']:['pushup.wall','pushup.floor'];}
 export interface Round { id:string; source:Source; exerciseProfileId:Profile; actions:number; damage:number; sealed:boolean }
 export interface State {
  schemaVersion:1; rulesVersion:1; levelId:string; levelVersion:number; runId:string;
@@ -19,8 +22,9 @@ export type Command =
  | {type:'pause'|'resume'|'endRound'|'advanceStage'};
 function requireThat(ok:unknown,message:string):asserts ok {if(!ok)throw new Error(message);}
 export function createRun(runId:string,level:Level=firstLevel):State {
- requireThat(runId.length>0,'run id');requireThat(level.id===firstLevel.id&&level.version===1&&JSON.stringify(level.stages)===JSON.stringify(firstLevel.stages),'level version');
- return {schemaVersion:1,rulesVersion:1,levelId:level.id,levelVersion:level.version,runId,phase:'ready',stage:0,targets:[{hp:40,maxHp:40}],initialShield:180,damage:0,totalActions:0,skills:0,scheduledSkill:null,rounds:[],currentRoundId:null,inputEpoch:0,eventIds:[]};
+ const registered=getLevel(level.id);
+ requireThat(runId.length>0,'run id');requireThat(level.version===registered.version&&JSON.stringify(level.stages)===JSON.stringify(registered.stages),'level version');
+ return {schemaVersion:1,rulesVersion:1,levelId:level.id,levelVersion:level.version,runId,phase:'ready',stage:0,targets:registered.stages[0]!.map(hp=>({hp,maxHp:hp})),initialShield:registered.stages.flat().reduce((a,b)=>a+b,0),damage:0,totalActions:0,skills:0,scheduledSkill:null,rounds:[],currentRoundId:null,inputEpoch:0,eventIds:[]};
 }
 export function reduce(state:State,cmd:Command):State {
  validateState(state);
@@ -33,7 +37,7 @@ export function reduce(state:State,cmd:Command):State {
   requireThat(!s.currentRoundId&&s.phase!=='complete','round already active or complete');
   requireThat(cmd.roundId&& !s.rounds.some(r=>r.id===cmd.roundId),'round id');
   requireThat(['button','camera'].includes(cmd.source),'source');
-  requireThat(['pushup.wall','pushup.floor'].includes(cmd.exerciseProfileId),'profile');
+  requireThat(stageProfiles(s.levelId,s.stage+(s.phase==='stageClear'?1:0)).includes(cmd.exerciseProfileId),'profile');
   s.rounds.push({id:cmd.roundId,source:cmd.source,exerciseProfileId:cmd.exerciseProfileId,actions:0,damage:0,sealed:false});s.currentRoundId=cmd.roundId;s.inputEpoch++;
   if(s.phase==='ready')s.phase='active';break;
  case 'action': {
@@ -50,35 +54,38 @@ export function reduce(state:State,cmd:Command):State {
   }
   s.eventIds.push(cmd.eventId);s.totalActions++;s.damage+=damage;r.actions++;r.damage+=damage;
   if(s.totalActions%4===0)s.skills=Math.min(2,s.skills+1);
-  if(s.targets.every(t=>t.hp===0)){if(s.stage===2){s.phase='complete';seal();}else s.phase='stageClear';}
+  if(s.targets.every(t=>t.hp===0)){if(s.stage===getLevel(s.levelId).stages.length-1){s.phase='complete';seal();}else s.phase='stageClear';}
   break; }
  case 'scheduleSkill':current();requireThat(s.phase==='active','phase');requireThat(s.skills>0&&['focus','split'].includes(cmd.skill),'skill');s.scheduledSkill=cmd.skill;break;
  case 'pause':current();requireThat(s.phase==='active','phase');s.phase='paused';s.inputEpoch++;break;
  case 'resume':current();requireThat(s.phase==='paused','phase');s.phase='active';s.inputEpoch++;break;
  case 'endRound':current();seal();if(s.phase==='active'||s.phase==='paused')s.phase='ready';break;
- case 'advanceStage':current();requireThat(s.phase==='stageClear','phase');s.stage++;s.targets=firstLevel.stages[s.stage]!.map(hp=>({hp,maxHp:hp}));s.phase='active';s.inputEpoch++;break;
+ case 'advanceStage':{const r=current();requireThat(s.phase==='stageClear','phase');requireThat(stageProfiles(s.levelId,s.stage+1).includes(r.exerciseProfileId),'next stage profile');s.stage++;s.targets=getLevel(s.levelId).stages[s.stage]!.map(hp=>({hp,maxHp:hp}));s.phase='active';s.inputEpoch++;break;}
  default:throw new Error('command');
  }
  validateState(s);return s;
 }
 export function validateState(value:unknown):asserts value is State {
- const s=value as State;requireThat(s&&s.schemaVersion===1&&s.rulesVersion===1&&s.levelId===firstLevel.id&&s.levelVersion===1,'version');
+ const s=value as State;requireThat(s&&s.schemaVersion===1&&s.rulesVersion===1,'version');
+ const level=getLevel(s.levelId);requireThat(s.levelVersion===level.version,'version');
+ const total=level.stages.flat().reduce((a,b)=>a+b,0);
  const integer=(n:unknown)=>Number.isSafeInteger(n)&&(n as number)>=0;
  requireThat(typeof s.runId==='string'&&s.runId.length>0&&integer(s.stage)&&s.stage<=2,'state identity');
  requireThat(['ready','active','paused','stageClear','complete'].includes(s.phase),'state phase');
- requireThat(integer(s.damage)&&s.damage<=180&&s.initialShield===180&&integer(s.totalActions)&&integer(s.inputEpoch)&&integer(s.skills)&&s.skills<=2,'state totals');
+ requireThat(integer(s.damage)&&s.damage<=total&&s.initialShield===total&&integer(s.totalActions)&&integer(s.inputEpoch)&&integer(s.skills)&&s.skills<=2,'state totals');
  requireThat(s.scheduledSkill===null||(['focus','split'].includes(s.scheduledSkill)&&s.skills>0),'state skill');
- const hp=firstLevel.stages[s.stage]!;
+ const hp=level.stages[s.stage]!;
  requireThat(Array.isArray(s.targets)&&s.targets.length===hp.length&&s.targets.every((t,i)=>t.maxHp===hp[i]&&integer(t.hp)&&t.hp<=t.maxHp),'state targets');
- const previous=firstLevel.stages.slice(0,s.stage).flat().reduce((a,b)=>a+b,0);
+ const previous=level.stages.slice(0,s.stage).flat().reduce((a,b)=>a+b,0);
  requireThat(s.damage===previous+s.targets.reduce((a,t)=>a+t.maxHp-t.hp,0),'state damage');
  requireThat(Array.isArray(s.eventIds)&&s.eventIds.every(id=>typeof id==='string'&&id.length>0)&&new Set(s.eventIds).size===s.eventIds.length&&s.eventIds.length===s.totalActions,'state events');
- requireThat(Array.isArray(s.rounds)&&new Set(s.rounds.map(r=>r.id)).size===s.rounds.length&&s.rounds.every(r=>typeof r.id==='string'&&r.id.length>0&&['button','camera'].includes(r.source)&&['pushup.wall','pushup.floor'].includes(r.exerciseProfileId)&&integer(r.actions)&&integer(r.damage)&&typeof r.sealed==='boolean'),'state rounds');
+ const profiles:Profile[]=level.id===kneeRaiseLevel.id?['kneeraise.standing','legraise.side']:['pushup.wall','pushup.floor'];
+ requireThat(Array.isArray(s.rounds)&&new Set(s.rounds.map(r=>r.id)).size===s.rounds.length&&s.rounds.every(r=>typeof r.id==='string'&&r.id.length>0&&['button','camera'].includes(r.source)&&profiles.includes(r.exerciseProfileId)&&integer(r.actions)&&integer(r.damage)&&typeof r.sealed==='boolean'),'state rounds');
  requireThat(s.rounds.reduce((a,r)=>a+r.damage,0)===s.damage&&s.rounds.reduce((a,r)=>a+r.actions,0)===s.totalActions,'state round totals');
  requireThat(s.currentRoundId===null||typeof s.currentRoundId==='string','state round id');
  requireThat(s.rounds.filter(r=>!r.sealed).length===(s.currentRoundId?1:0)&&(!s.currentRoundId||s.rounds.some(r=>r.id===s.currentRoundId&&!r.sealed)),'state active round');
  requireThat(!['active','paused'].includes(s.phase)||s.currentRoundId!==null,'state phase round');
  const cleared=s.targets.every(t=>t.hp===0);
- requireThat((s.phase==='stageClear')===(cleared&&s.stage<2)&& (s.phase==='complete')===(s.damage===180),'state completion');
+ requireThat((s.phase==='stageClear')===(cleared&&s.stage<level.stages.length-1)&& (s.phase==='complete')===(s.damage===total),'state completion');
  requireThat(s.phase!=='complete'||s.currentRoundId===null,'state complete round');
 }

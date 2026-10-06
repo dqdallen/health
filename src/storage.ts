@@ -27,7 +27,7 @@ export class SnapshotStore {
 export class Coordinator {
  state:State;blocked=false;private pending:State|null=null;
  constructor(private store:SnapshotStore,initial:State){
-  const saved=store.load();this.state=saved??initial;validateState(this.state);
+  const saved=store.load();if(saved&&saved.levelId!==initial.levelId)throw new Error('storage level mismatch; preserve records');this.state=saved??initial;validateState(this.state);
   if(this.state.phase==='active')this.commit(reduce(this.state,{type:'pause'}));
  }
  private commit(candidate:State):void {

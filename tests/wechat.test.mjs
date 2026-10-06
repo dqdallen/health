@@ -14,3 +14,21 @@ test('closing camera pauses active recognition and delayed poses cannot attack',
 
 test('sealed camera stage can start a fresh camera round at the next stage',async()=>{const p=page(false,{estimate:async()=>[],dispose(){}});assert.equal(typeof p.startCamera,'function');await p.startCamera();let r=p.c.state.rounds[0];for(let i=0;i<4;i++)p.send({type:'action',eventId:'pose'+i,roundId:r.id,inputEpoch:p.c.state.inputEpoch,source:'camera',exerciseProfileId:'pushup.wall'});p.end();await p.startCamera();assert.equal(p.c.state.phase,'active');assert.equal(p.c.state.stage,1);assert.equal(p.c.state.rounds[1].source,'camera');p.onUnload()});
 test('retrying a failed camera action preserves it but requires a deliberate resume',async()=>{const p=page(false,{estimate:async()=>[],dispose(){}});await p.startCamera();const r=p.c.state.rounds[0];p.failWrites=true;p.send({type:'action',eventId:'pose',roundId:r.id,inputEpoch:p.c.state.inputEpoch,source:'camera',exerciseProfileId:'pushup.wall'});p.failWrites=false;p.retry();assert.equal(p.c.state.totalActions,1);assert.equal(p.c.state.phase,'paused');p.onUnload()});
+test('standing game switches exercise at stage boundary and preserves hearth progress',async()=>{
+ const p=page();p.start();p.hit();p.openGame({currentTarget:{dataset:{level:'knee-01'}}});
+ assert.equal(p.data.v.gameTitle,'踏光栈道');p.start();for(let i=0;i<6;i++)p.hit();
+ assert.equal(p.c.state.phase,'stageClear');assert.equal(p.data.v.exerciseLabel,'站姿交替侧抬腿');
+ await p.advance();assert.equal(p.c.state.stage,1);assert.equal(p.c.state.rounds[0].sealed,true);
+ assert.equal(p.c.state.rounds[1].exerciseProfileId,'legraise.side');
+ for(let i=0;i<8;i++)p.hit();await p.advance();assert.equal(p.c.state.stage,2);
+ assert.equal(p.c.state.rounds[2].exerciseProfileId,'kneeraise.standing');
+ p.openGame({currentTarget:{dataset:{level:'hearth-01'}}});assert.equal(p.c.state.damage,10);assert.equal(p.c.state.phase,'paused');
+});
+test('camera exercise transitions retain camera source and ignore the old inference session',async()=>{
+ const p=page(false,{estimate:async()=>[],dispose(){}});p.openGame({currentTarget:{dataset:{level:'knee-01'}}});
+ await p.startCamera();const r=p.c.state.rounds[0];const oldEpoch=p.c.state.inputEpoch;
+ for(let i=0;i<6;i++)p.send({type:'action',eventId:'k'+i,roundId:r.id,inputEpoch:oldEpoch,source:'camera',exerciseProfileId:r.exerciseProfileId});
+ await p.advance();const next=p.c.state.rounds[1];assert.equal(next.source,'camera');assert.equal(next.exerciseProfileId,'legraise.side');
+ assert.equal(p.send({type:'action',eventId:'late',roundId:r.id,inputEpoch:oldEpoch,source:'camera',exerciseProfileId:r.exerciseProfileId}),false);
+ assert.equal(p.c.state.totalActions,6);p.onUnload();
+});
